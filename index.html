@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>❤️ 七霜点菜系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #fdf6f0;
+            min-height: 100vh;
+            padding: 16px;
+            padding-bottom: 40px;
+        }
+
+        /* 顶部栏 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 4px 20px 4px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            color: #e0605a;
+        }
+
+        .toggle-btn {
+            padding: 8px 18px;
+            background: #e0605a;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-btn:active {
+            background: #c04a44;
+        }
+
+        /* 视图容器 */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* ===== 点菜视图 ===== */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-top: 8px;
+        }
+
+        .menu-item {
+            background: white;
+            border-radius: 16px;
+            padding: 20px 8px 16px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(224, 96, 90, 0.12);
+            transition: transform 0.15s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .menu-item:active {
+            transform: scale(0.94);
+            border-color: #e0605a;
+        }
+
+        .menu-item .emoji {
+            font-size: 38px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .menu-item .name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .menu-item .price {
+            font-size: 13px;
+            color: #e0605a;
+            margin-top: 4px;
+        }
+
+        /* 备注输入区 */
+        .remark-area {
+            margin-top: 24px;
+            background: white;
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .remark-area label {
+            font-size: 14px;
+            color: #555;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .remark-area input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #e8ddd8;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .remark-area input:focus {
+            border-color: #e0605a;
+        }
+
+        .order-status {
+            margin-top: 20px;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 15px;
+            color: #555;
+            background: #f0ebe7;
+            display: none;
+        }
+
+        .order-status.show {
+            display: block;
+        }
+
+        .order-status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .order-status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* ===== 管理视图 ===== */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: white;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stats span {
+            font-size: 14px;
+            color: #777;
+        }
+
+        .stats strong {
+            font-size: 20px;
+            color: #e0605a;
+            margin-left: 4px;
+        }
+
+        .order-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 14px;
+            padding: 16px 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #e0605a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .order-card .info .dish {
+            font-size: 17px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .order-card .info .meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .order-card .info .remark {
+            font-size: 13px;
+            color: #666;
+            margin-top: 2px;
+            background: #f5f0ec;
+            padding: 2px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .order-card .done-btn {
+            padding: 6px 16px;
+            background: #e8e0db;
+            border: none;
+            border-radius: 16px;
+            font-size: 13px;
+            color: #555;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .order-card .done-btn:active {
+            background: #d0c8c2;
+        }
+
+        .order-card .done-btn.done {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .empty-tip {
+            text-align: center;
+            color: #bbb;
+            padding: 40px 0;
+            font-size: 15px;
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.78);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-size: 15px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.4s;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* 加载骨架 */
+        .loading-dots::after {
+            content: '...';
+            animation: dots 1.2s steps(4) infinite;
+        }
+
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部栏 -->
+    <div class="header">
+        <h1>🍽️ 小厨房</h1>
+        <button class="toggle-btn" id="toggleViewBtn">📋 管理订单</button>
+    </div>
+
+    <!-- ========== 视图1：点菜 ========== -->
+    <div class="view active" id="orderView">
+        <div class="menu-grid" id="menuGrid">
+            <!-- 菜品由 JS 动态生成 -->
+        </div>
+
+        <div class="remark-area">
+            <label for="remarkInput">📝 备注（可选）</label>
+            <input type="text" id="remarkInput" placeholder="比如：不要辣、多加饭..." />
+        </div>
+
+        <div class="order-status" id="orderStatus"></div>
+    </div>
+
+    <!-- ========== 视图2：管理 ========== -->
+    <div class="view" id="adminView">
+        <div class="stats">
+            <span>📦 待处理 <strong id="newCount">0</strong></span>
+            <span>✅ 已完成 <strong id="doneCount">0</strong></span>
+        </div>
+        <div class="order-list" id="orderList">
+            <div class="empty-tip">暂无订单，快去哄女友点菜吧 🥰</div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============================================================
+        //  配置区 —— 请改成你的 EdgeOne Pages 部署后的实际地址
+        // ============================================================
+        const API_BASE = ''; // 如果前后端同源，留空即可；否则填 https://你的域名
+
+        // ============================================================
+        //  数据：菜单
+        // ============================================================
+        const MENU = [
+            { name: '抹茶', emoji: '🍵', price: '¥0' },
+            { name: '麻辣烫', emoji: '🍜', price: '¥0' },
+            { name: '芝士蛋糕', emoji: '🍰', price: '¥0' },
+            { name: '青提蛋糕', emoji: '🍰', price: '¥0' },
+            { name: '番茄牛腩', emoji: '🍅', price: '¥0' },
+            { name: '酸辣粉', emoji: '🥣', price: '¥0' },
+        ];
+
+        // ============================================================
+        //  状态
+        // ============================================================
+        let currentView = 'order'; // 'order' | 'admin'
+        let pollTimer = null;
+        let isPolling = false;
+
+        // ============================================================
+        //  DOM 引用
+        // ============================================================
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => document.querySelectorAll(s);
+
+        const menuGrid = $('#menuGrid');
+        const remarkInput = $('#remarkInput');
+        const orderStatus = $('#orderStatus');
+        const toggleBtn = $('#toggleViewBtn');
+        const orderView = $('#orderView');
+        const adminView = $('#adminView');
+        const orderList = $('#orderList');
+        const newCount = $('#newCount');
+        const doneCount = $('#doneCount');
+        const toastEl = $('#toast');
+
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function showToast(msg, duration = 1800) {
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            clearTimeout(toastEl._timer);
+            toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), duration);
+        }
+
+        function showStatus(msg, type = '') {
+            orderStatus.textContent = msg;
+            orderStatus.className = 'order-status show ' + type;
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    orderStatus.classList.remove('show');
+                }, 2500);
+            }
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '刚刚';
+            const d = new Date(iso);
+            return d.toLocaleString('zh-CN', { hour12: false });
+        }
+
+        // ============================================================
+        //  1. 渲染菜单
+        // ============================================================
+        function renderMenu() {
+            menuGrid.innerHTML = MENU.map(item => `
+                <div class="menu-item" data-name="${item.name}">
+                    <span class="emoji">${item.emoji}</span>
+                    <div class="name">${item.name}</div>
+                    <div class="price">${item.price}</div>
+                </div>
+            `).join('');
+
+            // 绑定点菜事件
+            menuGrid.querySelectorAll('.menu-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const dish = el.dataset.name;
+                    handleOrder(dish);
+                });
+            });
+        }
+
+        // ============================================================
+        //  2. 点菜逻辑（调用边缘函数 /api/order）
+        // ============================================================
+        async function handleOrder(dish) {
+            const remark = remarkInput.value.trim() || '无备注';
+            const btn = menuGrid.querySelector(`[data-name="${dish}"]`);
+            if (btn) btn.style.opacity = '0.6';
+
+            try {
+                const resp = await fetch(`${API_BASE}/api/order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dish, remark })
+                });
+
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+
+                if (data.success) {
+                    showStatus(`✅ 已点「${dish}」！马上通知他~`, 'success');
+                    showToast(`❤️ 已为女友下单：${dish}`);
+                    remarkInput.value = '';
+                } else {
+                    throw new Error(data.message || '点菜失败');
+                }
+            } catch (err) {
+                console.error('[点菜错误]', err);
+                showStatus(`❌ 点菜失败：${err.message}，再试一次？`, 'error');
+            } finally {
+                if (btn) btn.style.opacity = '1';
+            }
+        }
+
+        // ============================================================
+        //  3. 管理视图 —— 拉取订单（轮询）
+        // ============================================================
+        async function fetchOrders() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/check`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const orders = await resp.json();
+
+                // 过滤出未完成的订单（status !== 'done'）
+                const pending = orders.filter(o => o.status !== 'done');
+                const completed = orders.filter(o => o.status === 'done');
+
+                // 更新计数
+                newCount.textContent = pending.length;
+                doneCount.textContent = completed.length;
+
+                // 渲染列表
+                if (pending.length === 0 && completed.length === 0) {
+                    orderList.innerHTML = `<div class="empty-tip">暂无订单，快去哄女友点菜吧 🥰</div>`;
+                    return;
+                }
+
+                let html = '';
+                // 先展示待处理
+                pending.forEach(o => {
+                    html += buildOrderCard(o, false);
+                });
+                // 再展示已完成（折叠显示）
+                if (completed.length > 0) {
+                    html += `<div style="margin-top:12px;font-size:13px;color:#bbb;text-align:center;">── 已完成 ──</div>`;
+                    completed.slice(0, 10).forEach(o => {
+                        html += buildOrderCard(o, true);
+                    });
+                    if (completed.length > 10) {
+                        html += `<div style="font-size:12px;color:#ccc;text-align:center;padding:4px;">仅显示最近10条已完成</div>`;
+                    }
+                }
+                orderList.innerHTML = html;
+
+                // 绑定“已完成”按钮事件
+                orderList.querySelectorAll('.done-btn:not(.done)').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const orderId = btn.dataset.id;
+                        await markDone(orderId);
+                    });
+                });
+
+            } catch (err) {
+                console.error('[轮询错误]', err);
+                orderList.innerHTML = `<div class="empty-tip" style="color:#e0605a;">⚠️ 加载失败，请检查网络</div>`;
+            }
+        }
+
+        // 构建单个订单卡片 HTML
+        function buildOrderCard(order, isDone) {
+            const dish = order.dish || '未知菜品';
+            const remark = order.remark || '无备注';
+            const time = formatTime(order.time || order.createdAt);
+            const doneClass = isDone ? 'done' : '';
+
+            return `
+                <div class="order-card">
+                    <div class="info">
+                        <div class="dish">🍽️ ${dish}</div>
+                        <div class="meta">${time}</div>
+                        <div class="remark">📝 ${remark}</div>
+                    </div>
+                    <button class="done-btn ${doneClass}" data-id="${order.id}" ${isDone ? 'disabled' : ''}>
+                        ${isDone ? '✅ 已完成' : '✔️ 完成'}
+                    </button>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        //  4. 标记订单为“已完成”
+        // ============================================================
+        async function markDone(orderId) {
+            try {
+                const resp = await fetch(`${API_BASE}/api/done`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId })
+                });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                if (data.success) {
+                    showToast('✅ 已标记完成');
+                    fetchOrders(); // 刷新列表
+                } else {
+                    throw new Error(data.message || '操作失败');
+                }
+            } catch (err) {
+                console.error('[标记完成错误]', err);
+                showToast('❌ 操作失败：' + err.message);
+            }
+        }
+
+        // ============================================================
+        //  5. 视图切换 + 轮询控制
+        // ============================================================
+        function switchView(view) {
+            currentView = view;
+            if (view === 'order') {
+                orderView.classList.add('active');
+                adminView.classList.remove('active');
+                toggleBtn.textContent = '📋 管理订单';
+                stopPolling();
+            } else {
+                orderView.classList.remove('active');
+                adminView.classList.add('active');
+                toggleBtn.textContent = '🍽️ 去点菜';
+                // 进入管理视图立即拉取一次，并启动轮询
+                fetchOrders();
+                startPolling();
+            }
+        }
+
+        function startPolling(interval = 4000) {
+            if (pollTimer) return;
+            pollTimer = setInterval(() => {
+                if (currentView === 'admin') {
+                    fetchOrders();
+                }
+            }, interval);
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        // ============================================================
+        //  6. 初始化
+        // ============================================================
+        function init() {
+            renderMenu();
+
+            // 切换按钮
+            toggleBtn.addEventListener('click', () => {
+                if (currentView === 'order') {
+                    switchView('admin');
+                } else {
+                    switchView('order');
+                }
+            });
+
+            // 默认进入点菜视图
+            switchView('order');
+
+            // 页面可见性变化时，自动恢复轮询（提升体验）
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopPolling();
+                } else {
+                    if (currentView === 'admin') {
+                        fetchOrders();
+                        startPolling();
+                    }
+                }
+            });
+
+            console.log('❤️ 女友点菜系统已启动！');
+            console.log('📌 点菜视图：女友选菜下单');
+            console.log('📌 管理视图：你查看并处理订单');
+        }
+
+        // DOM 加载完成后启动
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+
+</body>
+</html>
